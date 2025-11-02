@@ -1,0 +1,12 @@
+// api/resolve.js
+import models from "../data/models.json" assert { type: "json" };
+
+export default function handler(req, res) {
+  const url = new URL(req.url, `https://${req.headers.host}`);
+  const sku = (url.searchParams.get("sku") || "").trim();
+
+  const key = sku && models[sku];
+  if (!key) return res.status(404).json({ ok: false, error: "Unknown SKU" });
+
+  res.status(200).json({ ok: true, sku, key });
+}
