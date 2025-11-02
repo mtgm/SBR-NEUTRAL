@@ -1,12 +1,20 @@
 // api/resolve.js
-import models from "../data/models.json" assert { type: "json" };
+const fs = require("fs");
+const path = require("path");
 
-export default function handler(req, res) {
-  const url = new URL(req.url, `https://${req.headers.host}`);
-  const sku = (url.searchParams.get("sku") || "").trim();
+module.exports = (req, res) => {
+  try {
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    const sku = (url.searchParams.get("sku") || "").trim();
 
-  const key = sku && models[sku];
-  if (!key) return res.status(404).json({ ok: false, error: "Unknown SKU" });
+    const jsonPath = path.join(process.cwd(), "data", "models.json");
+    const models = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 
-  res.status(200).json({ ok: true, sku, key });
-}
+    const key = sku && models[sku];
+    if (!key) return res.status(404).json({ ok: false, error: "Unknown SKU" });
+
+    res.status(200).json({ ok: true, sku, key });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "ResolveFailed", message: e.message });
+  }
+};
