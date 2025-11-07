@@ -21,16 +21,11 @@ module.exports = (req, res) => {
       return res.status(500).json({ ok:false, error: "models.json parse error", message: e.message });
     }
 
-    // Normalize keys to lowercase for case-insensitive lookup
     const normalized = {};
-    Object.keys(models).forEach(k => {
-      normalized[k.toLowerCase()] = models[k];
-    });
+    Object.keys(models).forEach(k => normalized[k.toLowerCase()] = models[k]);
 
     const key = normalized[skuParam.toLowerCase()];
-    if (!key) {
-      return res.status(404).json({ ok: false, error: "Model not found", sku: skuParam, available: Object.keys(models) });
-    }
+    if (!key) return res.status(404).json({ ok: false, error: "Model not found", sku: skuParam, available: Object.keys(models) });
 
     return res.status(200).json({ ok: true, sku: skuParam, key });
   } catch (err) {
