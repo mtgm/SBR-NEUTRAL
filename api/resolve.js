@@ -1,8 +1,8 @@
-// api/resolve.js
-const fs = require("fs");
-const path = require("path");
+// api/resolve.js  (ESM sürüm)
+import fs from "fs";
+import path from "path";
 
-module.exports = (req, res) => {
+export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const skuParam = (url.searchParams.get("sku") || "").trim();
@@ -18,18 +18,27 @@ module.exports = (req, res) => {
     try {
       models = JSON.parse(raw);
     } catch (e) {
-      return res.status(500).json({ ok:false, error: "models.json parse error", message: e.message });
+      return res.status(500).json({ ok: false, error: "models.json parse error", message: e.message });
     }
 
-    const normalized = {};
-    Object.keys(models).forEach(k => normalized[k.toLowerCase()] = models[k]);
+    // Case-insensitive eşleştirme
+    const norm = Object.fromEntries(
+      Object.entries(models).map(([k, v]) => [k.toLowerCase(), v])
+    );
 
-    const key = normalized[skuParam.toLowerCase()];
-    if (!key) return res.status(404).json({ ok: false, error: "Model not found", sku: skuParam, available: Object.keys(models) });
+    const key = norm[skuParam.toLowerCase()];
+    if (!key) {
+      return res.status(404).json({
+        ok: false,
+        error: "Model not found",
+        sku: skuParam,
+        available: Object.keys(models),
+      });
+    }
 
     return res.status(200).json({ ok: true, sku: skuParam, key });
   } catch (err) {
-    console.error("resolve.js error:", err);
+    console.error("resolve error:", err);
     return res.status(500).json({ ok: false, error: "ResolveFailed", message: err.message });
   }
-};
+}
