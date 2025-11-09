@@ -1,7 +1,7 @@
 {
-  "rewrites": [
-    { "source": "/m/:sku", "destination": "/index.html" },
-    { "source": "/file/:key*", "destination": "/api/glb?key=:key" }
-  ],
-  "cleanUrls": true
+  "cleanUrls": true,
+  "routes": [
+    { "src": "^/m/([^/]+)$", "dest": "/index.html" },
+    { "src": "^/file/(.*)$", "dest": "/api/file?key=$1" }
+  ]
 }
