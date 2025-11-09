@@ -1,13 +1,15 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>PlanSmithCo | AR Model Viewer</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/styles.css" />
+    <title>PlanSmithCo | AR Viewer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/styles.css">
     <style>
-      html,body { height:100%; margin:0; background:#fff; overflow:hidden; }
-      model-viewer { width:100vw; height:100vh; --poster-color: transparent; }
+      html,body{height:100%;margin:0;overflow:hidden;background:#fff}
+      model-viewer{width:100vw;height:100vh;--poster-color:transparent}
+      #brand{position:fixed;left:12px;bottom:12px;background:#00000099;color:#fff;
+             padding:6px 10px;border-radius:10px;font:500 12px/1.2 system-ui}
     </style>
   </head>
   <body>
@@ -19,36 +21,30 @@
       camera-orbit="0deg 75deg auto"
       field-of-view="45deg" min-field-of-view="15deg" max-field-of-view="75deg"
       exposure="1.2" autoplay>
-      <div class="progress-bar hide" slot="progress-bar">
-        <div class="update-bar"></div>
-      </div>
+      <div class="progress-bar hide" slot="progress-bar"><div class="update-bar"></div></div>
       <button slot="ar-button" id="ar-button">View in your space</button>
-      <div id="ar-prompt"><img src="/ar_hand_prompt.png" alt="AR prompt" /></div>
+      <div id="ar-prompt"><img src="/ar_hand_prompt.png" alt="AR prompt"></div>
     </model-viewer>
+    <div id="brand">@PlanSmithCo</div>
 
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
     <script>
       (async () => {
         const u = new URL(location.href);
         const m = u.pathname.match(/^\/m\/([^\/#?]+)/);
         const skuFromPath = m ? m[1] : null;
-        const qs = new URLSearchParams(u.search);
+        const qs  = new URLSearchParams(u.search);
+        const sku = skuFromPath || qs.get("sku");
 
-        const sku = (skuFromPath || qs.get("sku") || "").toUpperCase();
         let key = qs.get("key");
-
         if (!key && sku) {
           const r = await fetch(`/api/resolve?sku=${encodeURIComponent(sku)}`);
-          const j = await r.json();
-          if (j.ok) key = j.key;
+          const j = await r.json().catch(()=>({}));
+          if (j && j.ok) key = j.key;
         }
         key = key || "SBR-v2.glb";
-
-        document.getElementById("mv")
-          .setAttribute("src", `/api/glb?key=${encodeURIComponent(key)}`);
+        document.getElementById("mv").setAttribute("src", `/api/glb?key=${encodeURIComponent(key)}`);
       })();
     </script>
-
-    <script src="/script.js"></script>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   </body>
 </html>
