@@ -29,22 +29,20 @@
 
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
     <script>
-      (async () => {
-        const u = new URL(location.href);
-        const m = u.pathname.match(/^\/m\/([^\/#?]+)/);
-        const skuFromPath = m ? m[1] : null;
-        const qs  = new URLSearchParams(u.search);
-        const sku = skuFromPath || qs.get("sku");
+(async () => {
+  const u = new URL(location.href);
+  const m = u.pathname.match(/^\/m\/([^\/#?]+)/);
+  const sku = m ? m[1] : (new URLSearchParams(u.search)).get("sku");
+  let key = (new URLSearchParams(u.search)).get("key");
 
-        let key = qs.get("key");
-        if (!key && sku) {
-          const r = await fetch(`/api/resolve?sku=${encodeURIComponent(sku)}`);
-          const j = await r.json().catch(()=>({}));
-          if (j && j.ok) key = j.key;
-        }
-        key = key || "SBR-v2.glb";
-        document.getElementById("mv").setAttribute("src", `/api/glb?key=${encodeURIComponent(key)}`);
-      })();
-    </script>
+  if (!key && sku) {
+    const r = await fetch(`/api/resolve?sku=${encodeURIComponent(sku)}`);
+    const j = await r.json();
+    if (j.ok) key = j.key;
+  }
+  key = key || "SBR-v2.glb";
+  document.getElementById("mv").setAttribute("src", `/file/${encodeURIComponent(key)}`);
+})();
+</script>
   </body>
 </html>
