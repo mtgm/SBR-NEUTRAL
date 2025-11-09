@@ -1,55 +1,90 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>PlanSmithCo | AR Viewer</title>
+    <title>PlanSmithCo | AR Model Viewer</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/styles.css">
     <style>
-      html,body{height:100%;margin:0;overflow:hidden;background:#fff}
+      html,body{height:100%;margin:0;background:#fff;overflow:hidden}
       model-viewer{width:100vw;height:100vh;--poster-color:transparent}
-      #brand{position:fixed;left:12px;bottom:12px;background:#00000099;color:#fff;
-             padding:6px 10px;border-radius:10px;font:500 12px/1.2 system-ui}
+      #brand{position:fixed;left:12px;bottom:12px;font:600 12px/1 ui-sans-serif,system-ui;opacity:.6}
     </style>
   </head>
   <body>
     <model-viewer id="mv"
-      ar ar-modes="webxr scene-viewer quick-look"
-      camera-controls tone-mapping="neutral"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      tone-mapping="neutral"
       poster="/poster.webp"
-      shadow-intensity="0.45" shadow-softness="0.95"
+      shadow-intensity="0.45"
+      shadow-softness="0.95"
       camera-orbit="0deg 75deg auto"
-      field-of-view="45deg" min-field-of-view="15deg" max-field-of-view="75deg"
-      exposure="1.2" autoplay>
-      <div class="progress-bar hide" slot="progress-bar"><div class="update-bar"></div></div>
+      field-of-view="45deg"
+      min-field-of-view="15deg"
+      max-field-of-view="75deg"
+      exposure="1.2">
+      <div class="progress-bar hide" slot="progress-bar">
+        <div class="update-bar"></div>
+      </div>
       <button slot="ar-button" id="ar-button">View in your space</button>
-      <div id="ar-prompt"><img src="/ar_hand_prompt.png" alt="AR prompt"></div>
+      <div id="ar-prompt"><img src="/ar_hand_prompt.png" alt=""></div>
     </model-viewer>
+
     <div id="brand">@PlanSmithCo</div>
 
-<script>
-  (async () => {
-    const u = new URL(location.href);
-    const m = u.pathname.match(/^\/m\/([^\/#?]+)/);
-    const skuFromPath = m ? m[1] : null;
+    <!-- model-viewer component -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
-    const qs = new URLSearchParams(u.search);
-    const sku = skuFromPath || qs.get("sku");
-    let key   = qs.get("key");
+    <!-- Bizim yükleme mantığımız: component yüklendikten sonra -->
+    <script>
+      (async () => {
+        try {
+          const mv = document.getElementById('mv');
+          if (!mv) { console.error('mv element not found'); return; }
 
-    if (!key && sku) {
-      const r = await fetch(`/api/resolve?sku=${encodeURIComponent(sku)}`);
-      const j = await r.json();
-      if (j.ok) key = j.key;
-    }
+          const url = new URL(location.href);
+          // /m/<SKU> yakala
+          const m = url.pathname.match(/^\/m\/([^\/#?]+)/);
+          const skuFromPath = m ? m[1] : null;
 
-    key = key || "SBR-v2.glb"; // fallback
+          const qs  = new URLSearchParams(url.search);
+          const sku = skuFromPath || qs.get('sku') || 'SBRV2';
 
-    document.getElementById("mv")
-      .setAttribute("src", `/file/${encodeURIComponent(key)}`);
-  })();
-</script>
+          console.log('[viewer] sku =', sku);
 
+          // Önce /api/resolve ile anahtarı bul
+          let key = qs.get('key');
+          if (!key) {
+            const res = await fetch(`/api/resolve?sku=${encodeURIComponent(sku)}`);
+            const json = await res.json();
+            console.log('[viewer] resolve ->', json);
+            if (json && json.ok && json.key) {
+              key = json.key;
+            }
+          }
 
+          // Son güvenli fallback
+          key = key || 'SBR-v2.glb';
+
+          const fileUrl = `/file/${encodeURIComponent(key)}`;
+          console.log('[viewer] set src =', fileUrl);
+
+          // src'yi ver
+          mv.src = fileUrl;
+
+          // Yükleme hatasını görünür yap
+          mv.addEventListener('error', (e) => {
+            console.error('[viewer] model-viewer error:', e?.detail || e);
+          });
+        } catch (err) {
+          console.error('[viewer] fatal:', err);
+        }
+      })();
+    </script>
+
+    <!-- (opsiyonel) kendi scriptin -->
+    <script src="/script.js"></script>
   </body>
 </html>
