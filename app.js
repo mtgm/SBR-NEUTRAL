@@ -1,6 +1,17 @@
-// app.js - Müşteri Tarafı
+// app.js - UI ve Logic
 
-// ... (Üst kısımdaki değişkenler ve showError aynı kalsın) ...
+const mv = document.getElementById('mv');
+const loader = document.getElementById('loader-container');
+const arBtn = document.getElementById('ar-btn');
+const errorToast = document.getElementById('error-toast');
+
+// Hata Gösterici
+function showError(msg) {
+  errorToast.textContent = msg;
+  errorToast.style.display = 'block';
+  // Loader varsa onu da gizle ki hatayı görelim
+  if(loader) loader.style.display = 'none';
+}
 
 async function init() {
   const url = new URL(window.location.href);
@@ -11,19 +22,24 @@ async function init() {
   if (!sku) return showError("Error: Product SKU missing.");
 
   try {
-    // 1. Motor'dan Model ve Config linklerini al
+    // 1. Motor'dan Linki Al
     const res = await fetch(`/api/engine?sku=${sku}`);
-    if (!res.ok) throw new Error("Product not found.");
+    if (!res.ok) throw new Error("Product not found or access denied.");
     
     const data = await res.json();
-    
-    // 2. Modeli Yükle
-    mv.src = data.modelUrl;
-    window.arFileUrl = data.modelUrl;
+    if (!data.ok) throw new Error(data.error);
 
-    // 3. KAYITLI AYAR VAR MI? (Otomasyon Kısmı)
-    if (data.configUrl) {
-      applySavedConfig(data.configUrl);
+    // 2. Modeli Yükle
+    mv.src = data.url;
+    window.arFileUrl = data.url;
+
+    // 3. Texture Varsa Uygula
+    const tex = url.searchParams.get('tex');
+    if (tex) {
+      mv.addEventListener('load', async () => {
+         // Burası texture kodu, şimdilik basit tutuyoruz
+         console.log("Texture requested:", tex);
+      }, { once: true });
     }
 
   } catch (err) {
@@ -32,37 +48,30 @@ async function init() {
   }
 }
 
-// Kayıtlı ayarı çek ve uygula
-async function applySavedConfig(configUrl) {
-  try {
-    const res = await fetch(configUrl);
-    if (!res.ok) return; // Ayar yoksa varsayılan model kalsın
-    
-    const config = await res.json();
-    
-    if (config.textureName) {
-      console.log("Özel kaplama bulundu:", config.textureName);
-      
-      // Texture dosyasının güvenli linkini al
-      const texRes = await fetch(`/api/engine?type=texture&tex=${config.textureName}`);
-      const texData = await texRes.json();
-      
-      if (texData.ok) {
-        // Model yüklenince kaplamayı giydir
-        mv.addEventListener('load', async () => {
-          const texture = await mv.createTexture(texData.url);
-          // Tüm materyalleri veya ilkini boya (Modeline göre değişir)
-          // Şimdilik ilk materyale uyguluyoruz:
-          const material = mv.model.materials[0]; 
-          if(material) {
-             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
-          }
-        }, { once: true });
-      }
-    }
-  } catch (e) {
-    console.log("Config yüklenemedi, varsayılan gösteriliyor.");
-  }
-}
+// MODEL YÜKLENİNCE NE OLACAK?
+// Model-viewer 'load' eventini tetiklediğinde Loader'ı kaldır.
+mv.addEventListener('load', () => {
+  // 1. Loader'ı yavaşça yok et (CSS transition ile)
+  loader.classList.add('hidden');
+  
+  // 2. AR Butonunu göster
+  arBtn.style.display = 'flex';
+  
+  console.log("Model loaded successfully.");
+});
 
-// ... (Alttaki AR butonu kodları aynı kalsın) ...
+// AR BUTONUNA TIKLANINCA
+arBtn.addEventListener('click', () => {
+  if (mv.canActivateAR) {
+    mv.activateAR();
+  } else if (window.arFileUrl) {
+    // Android Fallback
+    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(window.arFileUrl)}&mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+    window.location.href = intent;
+  } else {
+    alert("AR is not supported on this device.");
+  }
+});
+
+// Başlat
+init();

@@ -3,17 +3,15 @@
   <head>
     <title>PlanSmithCo AR</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
 
-    <div id="loader-container">
-      <img src="/poster.webp" alt="PlanSmithCo Logo" class="brand-logo">
-      <div class="loading-text">Loading Model...</div>
+    <div id="status-container">
+      <div id="status-msg" class="status-msg">Yükleniyor...</div>
     </div>
-
-    <div id="error-toast"></div>
 
     <model-viewer id="mv"
       ar
@@ -22,12 +20,13 @@
       tone-mapping="neutral"
       shadow-intensity="1"
       disable-zoom
-      auto-rotate
-      loading="eager"> </model-viewer>
+      auto-rotate>
+    </model-viewer>
 
-    <button id="ar-btn" style="display: none;">View in your space</button>
+    <button id="ar-btn">Mekanımda Gör</button>
 
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    
     <script type="module" src="/app.js"></script>
   </body>
 </html>
