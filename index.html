@@ -9,23 +9,21 @@
   <body>
 
     <div id="loader-container">
-      <img src="/poster.webp" alt="PlanSmithCo" class="brand-logo">
-      <div class="loading-text">Loading Product...</div>
+      <img src="/poster.webp" alt="PlanSmithCo Logo" class="brand-logo">
+      <div class="loading-text">Loading Model...</div>
     </div>
 
     <div id="error-toast"></div>
 
     <model-viewer id="mv"
       ar
-      ar-scale="fixed"
-      ar-placement="floor"
       ar-modes="webxr scene-viewer quick-look"
       camera-controls
       tone-mapping="neutral"
       shadow-intensity="1"
       disable-zoom
-      loading="eager">
-    </model-viewer>
+      auto-rotate
+      loading="eager"> </model-viewer>
 
     <button id="ar-btn" style="display: none;">View in your space</button>
 
