@@ -1,7 +1,7 @@
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// Veritabanı
+// MODEL VERİTABANI
 const MODEL_DB = {
   "SBRV2": "SBR-v2.glb",
   "CHAIRV1": "chair-v1.glb",
@@ -21,32 +21,51 @@ export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const sku = url.searchParams.get("sku")?.toUpperCase();
-    
-    // DEBUG: Konsola yazdıralım (Vercel Loglarında görünür)
-    console.log(`İstek geldi. SKU: ${sku}`);
+    const type = url.searchParams.get("type"); // 'write' (kaydet) veya 'texture' (resim)
+    const textureName = url.searchParams.get("tex"); // İstenen resim dosyasının adı
 
-    if (!sku || !MODEL_DB[sku]) {
-      return res.status(404).json({ ok: false, error: "MODEL BULUNAMADI (YENI KOD)", sku });
+    // --- A. TEXTURE İSTEĞİ (Resim Linki Ver) ---
+    if (type === 'texture' && textureName) {
+      // Güvenlik: Sadece 'textures/' klasöründeki veya kök dizindeki resimlere izin verelim
+      // Burada dosyanın R2'da 'textures' klasöründe olduğunu varsayıyoruz.
+      const command = new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: `textures/${textureName}` 
+      });
+      const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+      return res.status(200).json({ ok: true, url: signedUrl });
     }
 
-    const fileKey = MODEL_DB[sku];
+    if (!sku || !MODEL_DB[sku]) {
+      return res.status(404).json({ ok: false, error: "Model Bulunamadı" });
+    }
 
-    const command = new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: fileKey,
-    });
+    // --- B. AYAR KAYDETME (Studio'dan gelir) ---
+    if (type === 'write') {
+      const command = new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: `configs/${sku}.json`, // Ayarı 'configs' klasörüne kaydet
+        ContentType: 'application/json'
+      });
+      const signedUrl = await getSignedUrl(client, command, { expiresIn: 60 });
+      return res.status(200).json({ ok: true, url: signedUrl });
+    }
 
-    const signedUrl = await getSignedUrl(client, command, { expiresIn: 60 });
+    // --- C. MÜŞTERİ GÖRÜNTÜLEME (Model + Ayar) ---
+    
+    // 1. Model Linki
+    const modelKey = MODEL_DB[sku];
+    const modelCmd = new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: modelKey });
+    const modelUrl = await getSignedUrl(client, modelCmd, { expiresIn: 3600 });
 
-    return res.status(200).json({ ok: true, url: signedUrl, debug: "BU YENI KOD!" });
+    // 2. Ayar Dosyası Linki (Varsa)
+    const configCmd = new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: `configs/${sku}.json` });
+    const configUrl = await getSignedUrl(client, configCmd, { expiresIn: 3600 });
+
+    return res.status(200).json({ ok: true, modelUrl, configUrl });
 
   } catch (error) {
-    console.error("KRITIK HATA:", error);
-    // Hatanın ne olduğunu tam olarak görelim
-    return res.status(500).json({ 
-      ok: false, 
-      error: "R2 BAGLANTISI BASARISIZ", 
-      detay: error.message 
-    });
+    console.error("Engine Hatası:", error);
+    return res.status(500).json({ ok: false, error: error.message });
   }
 }
