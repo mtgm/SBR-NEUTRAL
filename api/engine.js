@@ -1,7 +1,7 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 // JSON'ı 'import' ile alıyoruz, böylece Vercel dosyayı kesinlikle paketler.
-import models from '../models.json'; 
+import models from './models.json'; 
 
 const R2_CONFIG = {
   region: "auto",
