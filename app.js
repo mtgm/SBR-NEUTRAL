@@ -18,7 +18,7 @@ async function init() {
   if (!sku) return showError("SKU Missing.");
 
   try {
-    // 1. Linki Al
+    // 1. Motor'dan Linki Al
     const res = await fetch(`/api/engine?sku=${sku}`);
     if (!res.ok) throw new Error("Product not found.");
     
@@ -27,8 +27,6 @@ async function init() {
 
     // 2. Modeli Yükle
     mv.src = data.url;
-    
-    // Android Fallback için linki sakla
     window.arFileUrl = data.url;
 
   } catch (err) {
@@ -48,7 +46,7 @@ arBtn.addEventListener('click', () => {
   if (mv.canActivateAR) {
     mv.activateAR();
   } else if (window.arFileUrl) {
-    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(window.arFileUrl)}&mode=ar_preferred&resizable=false#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(window.arFileUrl)}&mode=ar_preferred&title=PlanSmithCo#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
     window.location.href = intent;
   } else {
     alert("AR not supported.");
